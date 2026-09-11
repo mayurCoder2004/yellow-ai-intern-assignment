@@ -56,30 +56,33 @@ async function main() {
     try {
         const orders = await loadOrders();
 
-        console.log("Testing delay conditions:");
-        console.log("Rain:", shouldDelayOrder("Rain"));
-        console.log("Snow:", shouldDelayOrder("Snow"));
-        console.log("Extreme:", shouldDelayOrder("Extreme"));
-        console.log("Clouds:", shouldDelayOrder("Clouds"));
-
-        console.log("\nFetching weather concurrently...");
+        console.log("Fetching weather concurrently...");
 
         const weatherResults = await Promise.all(
             orders.map(order => getWeather(order.city))
         );
 
-        console.log("\nWeather results:");
+        console.log("\nOrder status preview:");
 
-        weatherResults.forEach(result => {
-            if (result.success) {
+        orders.forEach((order, index) => {
+            const result = weatherResults[index];
+
+            if (!result.success) {
                 console.log(
-                    `${result.city}: ${result.weather.weather[0].main}`
+                    `${order.order_id} | ${order.city} | ${order.status} | Weather unavailable`
                 );
-            } else {
-                console.log(
-                    `${result.city}: Failed - ${result.error}`
-                );
+                return;
             }
+
+            const weatherMain = result.weather.weather[0].main;
+
+            const status = shouldDelayOrder(weatherMain)
+                ? "Delayed"
+                : "Pending";
+
+            console.log(
+                `${order.order_id} | ${order.city} | ${weatherMain} | ${status}`
+            );
         });
     } catch (error) {
         console.log("Program failed:", error.message);
