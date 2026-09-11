@@ -4,18 +4,40 @@ const axios = require("axios");
 const fs = require("fs/promises");
 
 async function getWeather(city) {
-    const response = await axios.get(
-        "https://api.openweathermap.org/data/2.5/weather",
-        {
-            params: {
-                q: city,
-                appid: process.env.OPENWEATHER_API_KEY,
-                units: "metric"
+    try {
+        const response = await axios.get(
+            "https://api.openweathermap.org/data/2.5/weather",
+            {
+                params: {
+                    q: city,
+                    appid: process.env.OPENWEATHER_API_KEY,
+                    units: "metric"
+                }
             }
-        }
-    );
+        );
 
-    return response.data;
+        return {
+            success: true,
+            city,
+            weather: response.data
+        };
+    } catch (error) {
+        console.log(`Weather request failed for ${city}.`);
+
+        if (error.response) {
+            console.log(
+                `Status: ${error.response.status}, Message: ${error.response.data.message}`
+            );
+        } else {
+            console.log(`Error: ${error.message}`);
+        }
+
+        return {
+            success: false,
+            city,
+            error: error.response?.data?.message || error.message
+        };
+    }
 }
 
 async function loadOrders() {
@@ -35,16 +57,20 @@ async function main() {
         );
 
         console.log("Weather results:");
-        console.log(weatherResults);
-    } catch (error) {
-        console.log("Weather fetching failed.");
 
-        if (error.response) {
-            console.log("Status:", error.response.status);
-            console.log("Message:", error.response.data.message);
-        } else {
-            console.log("Error:", error.message);
-        }
+        weatherResults.forEach(result => {
+            if (result.success) {
+                console.log(
+                    `${result.city}: ${result.weather.weather[0].main}`
+                );
+            } else {
+                console.log(
+                    `${result.city}: Failed - ${result.error}`
+                );
+            }
+        });
+    } catch (error) {
+        console.log("Program failed:", error.message);
     }
 }
 
