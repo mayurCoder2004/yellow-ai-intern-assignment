@@ -52,6 +52,12 @@ async function loadOrders() {
     return JSON.parse(data);
 }
 
+async function saveOrders(orders) {
+    const data = JSON.stringify(orders, null, 2);
+
+    await fs.writeFile("orders.json", data, "utf-8");
+}
+
 async function main() {
     try {
         const orders = await loadOrders();
@@ -62,28 +68,32 @@ async function main() {
             orders.map(order => getWeather(order.city))
         );
 
-        console.log("\nOrder status preview:");
+        console.log("\nUpdating order statuses...");
 
         orders.forEach((order, index) => {
             const result = weatherResults[index];
 
             if (!result.success) {
                 console.log(
-                    `${order.order_id} | ${order.city} | ${order.status} | Weather unavailable`
+                    `${order.order_id} | ${order.city} | Status unchanged: ${order.status}`
                 );
                 return;
             }
 
             const weatherMain = result.weather.weather[0].main;
 
-            const status = shouldDelayOrder(weatherMain)
+            order.status = shouldDelayOrder(weatherMain)
                 ? "Delayed"
                 : "Pending";
 
             console.log(
-                `${order.order_id} | ${order.city} | ${weatherMain} | ${status}`
+                `${order.order_id} | ${order.city} | ${weatherMain} | ${order.status}`
             );
         });
+
+        await saveOrders(orders);
+
+        console.log("\norders.json updated successfully.");
     } catch (error) {
         console.log("Program failed:", error.message);
     }
