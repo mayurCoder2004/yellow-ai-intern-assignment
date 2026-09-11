@@ -40,6 +40,12 @@ async function getWeather(city) {
     }
 }
 
+function shouldDelayOrder(weatherMain) {
+    const delayedConditions = ["Rain", "Snow", "Extreme"];
+
+    return delayedConditions.includes(weatherMain);
+}
+
 async function loadOrders() {
     const data = await fs.readFile("orders.json", "utf-8");
 
@@ -50,13 +56,19 @@ async function main() {
     try {
         const orders = await loadOrders();
 
-        console.log("Fetching weather concurrently...");
+        console.log("Testing delay conditions:");
+        console.log("Rain:", shouldDelayOrder("Rain"));
+        console.log("Snow:", shouldDelayOrder("Snow"));
+        console.log("Extreme:", shouldDelayOrder("Extreme"));
+        console.log("Clouds:", shouldDelayOrder("Clouds"));
+
+        console.log("\nFetching weather concurrently...");
 
         const weatherResults = await Promise.all(
             orders.map(order => getWeather(order.city))
         );
 
-        console.log("Weather results:");
+        console.log("\nWeather results:");
 
         weatherResults.forEach(result => {
             if (result.success) {
