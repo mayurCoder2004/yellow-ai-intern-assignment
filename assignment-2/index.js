@@ -28,11 +28,23 @@ async function main() {
     try {
         const orders = await loadOrders();
 
-        console.log("Orders loaded successfully:");
-        console.log(orders);
+        console.log("Fetching weather concurrently...");
+
+        const weatherResults = await Promise.all(
+            orders.map(order => getWeather(order.city))
+        );
+
+        console.log("Weather results:");
+        console.log(weatherResults);
     } catch (error) {
-        console.log("Failed to load orders.");
-        console.log("Error:", error.message);
+        console.log("Weather fetching failed.");
+
+        if (error.response) {
+            console.log("Status:", error.response.status);
+            console.log("Message:", error.response.data.message);
+        } else {
+            console.log("Error:", error.message);
+        }
     }
 }
 
