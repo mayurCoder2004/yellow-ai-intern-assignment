@@ -1,6 +1,7 @@
 require("dotenv").config();
 
 const axios = require("axios");
+const fs = require("fs/promises");
 
 async function getWeather(city) {
     const response = await axios.get(
@@ -17,23 +18,22 @@ async function getWeather(city) {
     return response.data;
 }
 
-async function testWeather() {
+async function loadOrders() {
+    const data = await fs.readFile("orders.json", "utf-8");
+
+    return JSON.parse(data);
+}
+
+async function main() {
     try {
-        const weather = await getWeather("New York");
+        const orders = await loadOrders();
 
-        console.log("City:", weather.name);
-        console.log("Temperature:", weather.main.temp, "°C");
-        console.log("Weather:", weather.weather[0].main);
+        console.log("Orders loaded successfully:");
+        console.log(orders);
     } catch (error) {
-        console.log("Weather API request failed.");
-
-        if (error.response) {
-            console.log("Status:", error.response.status);
-            console.log("Message:", error.response.data.message);
-        } else {
-            console.log("Error:", error.message);
-        }
+        console.log("Failed to load orders.");
+        console.log("Error:", error.message);
     }
 }
 
-testWeather();
+main();
