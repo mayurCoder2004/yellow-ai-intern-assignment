@@ -1,0 +1,346 @@
+{
+  "name": "Yellow AI - GitHub Lead Sniper",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "8d8af725-9089-40ee-b360-ec0961f4c9cf",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/mayurCoder2004/chefmate/stargazers",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "13673ea2-6d82-4968-b112-18c136377a5a",
+      "name": "Fetch Stargazers",
+      "retryOnFail": true,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "githubApi": {
+          "id": "IPfAlR4PjTvCqjYH",
+          "name": "GitHub account"
+        }
+      },
+      "notes": "Retries GitHub stargazer API requests up to 3 times with a 1-second delay to handle transient API or rate-limit failures and avoid repeated rapid requests."
+    },
+    {
+      "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "PeHCRylxr8kiR6eS",
+          "mode": "list",
+          "cachedResultName": "Processed Stargazers",
+          "cachedResultUrl": "/projects/CMs2sysE6am0BiiA/datatables/PeHCRylxr8kiR6eS"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "=username",
+              "keyValue": "={{$json.login}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "3b542611-f1b2-425c-88be-7b317d8724de",
+      "name": "If row does not exist"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "PeHCRylxr8kiR6eS",
+          "mode": "list",
+          "cachedResultName": "Processed Stargazers",
+          "cachedResultUrl": "/projects/CMs2sysE6am0BiiA/datatables/PeHCRylxr8kiR6eS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "username": "={{$json.login}}"
+          },
+          "matchingColumns": [
+            "username"
+          ],
+          "schema": [
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        0
+      ],
+      "id": "3e412367-f6fd-4023-a676-4c79c5ce022f",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/users/{{$json.username}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "3cf058bf-2734-4f59-a563-edd5a7bc22ed",
+      "name": "Fetch GitHub Profile",
+      "retryOnFail": true,
+      "credentials": {
+        "githubApi": {
+          "id": "IPfAlR4PjTvCqjYH",
+          "name": "GitHub account"
+        }
+      },
+      "notes": "Retries GitHub profile API requests up to 3 times with a 1-second delay to handle transient API or rate-limit failures and avoid repeated rapid requests."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c57526de-1259-474d-8ab6-d104717567ab",
+              "leftValue": "={{$json.followers}}",
+              "rightValue": 100,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "46f7cdfd-3427-4a1f-82a1-741e2fdda8ba",
+              "leftValue": "={{$json.public_repos}}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        0
+      ],
+      "id": "09d11f1a-e79c-48f4-9676-c64b61d173ac",
+      "name": "High-Value Lead?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a B2B sales development assistant.\n\nAnalyze the GitHub developer's profile information below and write a concise, personalized one-sentence sales pitch for reaching out to them.\n\nDeveloper Name: {{$json.name}}\nBio: {{$json.bio}}\nCompany: {{$json.company}}\n\nRequirements:\n- Return exactly ONE sentence.\n- Make it personalized using the developer's bio and/or company.\n- Focus on a potential professional/business opportunity.\n- Do not mention that you are an AI.\n- Do not use generic phrases like \"I came across your profile\".\n- Return only the sales pitch, with no labels or explanation.",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1568,
+        -96
+      ],
+      "id": "5af2be4b-4bb8-41de-a6a0-f25eb24681fa",
+      "name": "Generate Sales Pitch"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1648,
+        112
+      ],
+      "id": "a2588a46-c3bc-4366-b94d-b4b78745af16",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "x6XujRyjPqt2Mevn",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_DISCORD_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  content: \"🚨 New High-Value GitHub Lead\\n\\n\" +\n    \"👤 Name: \" + ($('Fetch GitHub Profile').item.json.name || \"N/A\") + \"\\n\" +\n    \"📝 Bio: \" + ($('Fetch GitHub Profile').item.json.bio || \"No bio provided\") + \"\\n\" +\n    \"💡 Sales Pitch: \" + ($json.text || \"N/A\")\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1936,
+        -96
+      ],
+      "id": "0f338bfe-7ca0-418f-ae1f-6809cd164992",
+      "name": "Send Lead to Discord"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Stargazers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Stargazers": {
+      "main": [
+        [
+          {
+            "node": "If row does not exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If row does not exist": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Fetch GitHub Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch GitHub Profile": {
+      "main": [
+        [
+          {
+            "node": "High-Value Lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High-Value Lead?": {
+      "main": [
+        [
+          {
+            "node": "Generate Sales Pitch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Sales Pitch",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Sales Pitch": {
+      "main": [
+        [
+          {
+            "node": "Send Lead to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "58b3ddde-c88f-4820-b06a-8033a630d803",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8349211437a5bf726839a93e67f66d41d4b792f568fea65d5893d74a6317271a"
+  },
+  "nodeGroups": [],
+  "id": "dPowaB4qHi5K6d7O",
+  "tags": []
+}
